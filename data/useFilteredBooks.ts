@@ -17,7 +17,8 @@ const config = {
   headers: {
     "Content-Type": "application/json",
     "Access-Control-Request-Headers": "*",
-    "api-key": "",
+    "api-key":
+      "3e8ClzHXca82K2jMk7J6LXW2OJHNG5nRWbpspMq02tfjslEIWk1AmEqbF1zL6CKU",
   },
 };
 

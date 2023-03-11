@@ -7,7 +7,7 @@ type Props = {
 };
 const BookListItem = ({ book }: Props) => {
   return (
-    <View>
+    <View className="border border-red-700 m-3 mt-0">
       <Link href={`/books/${book.title}-${book.author}`}>
         <Image
           key={book._id}
