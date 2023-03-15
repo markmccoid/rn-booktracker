@@ -1,16 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Book, User } from "./types";
+import { Dictionary } from "lodash";
 
+type StorageKeys =
+  | "users"
+  | "currentUser"
+  | "books"
+  | "bookUserData"
+  | "tagData"
+  | "settings"
+  | "savedFilters"
+  | "dropboxToken";
+
+type Data = User | Dictionary<Book> | Record<string, Book>;
 // --------------------------------------------
 // -- LOAD passed key from Local Storage
 // --------------------------------------------
-export const loadFromAsyncStorage = async (key) => {
+export const loadFromAsyncStorage = async (key: StorageKeys) => {
   try {
     const data = await AsyncStorage.getItem(key);
-    //console.log("LFAS data", data, key);
     if (data) {
-      return JSON.parse(data);
+      const parsedData = await JSON.parse(data);
+      return await JSON.parse(data);
     } else {
-      // If localstorage is empty return empty array
+      // If localstorage is empty return undefined
       return undefined;
     }
   } catch (error) {
@@ -22,7 +35,7 @@ export const loadFromAsyncStorage = async (key) => {
 // --------------------------------------------
 // -- SAVE data with passed key to Local Storage
 // --------------------------------------------
-export const saveToAsyncStorage = async (key, data) => {
+export const saveToAsyncStorage = async (key: StorageKeys, data: Data) => {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(data));
   } catch (error) {
@@ -33,7 +46,7 @@ export const saveToAsyncStorage = async (key, data) => {
 // --------------------------------------------
 // -- MERGE data with passed key to Local Storage
 // --------------------------------------------
-export const mergeToAsyncStorage = async (key, data) => {
+export const mergeToAsyncStorage = async (key: StorageKeys, data: Data) => {
   try {
     await AsyncStorage.mergeItem(key, JSON.stringify(data));
   } catch (error) {
@@ -44,7 +57,7 @@ export const mergeToAsyncStorage = async (key, data) => {
 // --------------------------------------------
 // -- REMOVE passed key from Local Storage
 // --------------------------------------------
-export const removeFromAsyncStorage = async (key) => {
+export const removeFromAsyncStorage = async (key: StorageKeys) => {
   try {
     await AsyncStorage.removeItem(key);
   } catch (error) {
@@ -101,7 +114,7 @@ export const removeFromAsyncStorage = async (key) => {
 // -- Gets all keys for the app currently in AsyncStorage
 // --------------------------------------------
 export const getAllKeys = async () => {
-  let keys = [];
+  let keys: StorageKeys[] = [];
   try {
     keys = await AsyncStorage.getAllKeys();
     return keys;

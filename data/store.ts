@@ -1,44 +1,57 @@
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
-import { getAllBooks } from "./bookData";
 import {
-  loadCurrentUserFromStorage,
-  saveCurrentUserToStorage,
-  User,
-} from "./localData";
-import { Book } from "./types";
+  loadFromAsyncStorage,
+  removeFromAsyncStorage,
+  saveToAsyncStorage,
+} from "./asyncStorage";
+import {
+  initalizeBookData,
+  loadUserBookData,
+  saveUserBookData,
+} from "./dataBridge";
+
+import { Book, BookUserData, User } from "./types";
 import { useFilteredBooks } from "./useFilteredBooks";
 
-interface BookState {
-  books: Book[];
-}
-
-async function getBooksFromDB() {
-  return await getAllBooks();
-}
 //------------------------------------------------------------
 //-- AUTH STORE
 //------------------------------------------------------------
 interface AuthState {
   currentUser: User | undefined;
-  logUserIn: (user: User) => void;
-  logUserOut: () => void;
+  isLoggedIn: boolean;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: undefined,
-  logUserIn: async (user) => {
-    const resp = await saveCurrentUserToStorage(user);
-    set({ currentUser: user });
-  },
-  logUserOut: () => set({ currentUser: undefined }),
+  isLoggedIn: false,
 }));
+//~~~~~~~~~~~~~~~~~~~
+//~ Log IN and Log OUT functions
+//~~~~~~~~~~~~~~~~~~~
+// Looging in a user:
+// 1. save the "user" to local storage as the "currentuser"
+// 2. load all the books from local storage
+// 3. merge user data with book data and store in bookStore
+// 4. save current user and isLoggedIn flag to AuthStore
+export const logUserIn = async (user: User) => {
+  const resp = await saveToAsyncStorage("currentUser", user);
+  const booksKeyed = await loadFromAsyncStorage("books");
+  const books = await initalizeBookData(booksKeyed);
+  useAuthStore.setState({ currentUser: user, isLoggedIn: true });
+  useBookStore.setState({ books });
+};
+
+export const logUserOut = async () => {
+  useAuthStore.setState({ currentUser: undefined, isLoggedIn: false });
+  useBookStore.setState({ books: [] });
+  await removeFromAsyncStorage("currentUser");
+};
 //~~~~~~~~~~~~~~
 //~~ Auth Store Exports
 //~~~~~~~~~~~~~~
-export const useLogUserIn = () => useAuthStore((state) => state.logUserIn);
-export const useLogUserOut = () => useAuthStore((state) => state.logUserOut);
 export const useCurrentUser = () => useAuthStore((state) => state.currentUser);
+export const useIsLoggedIn = () => useAuthStore((state) => state.isLoggedIn);
 
 //------------------------------------------------------------
 //-- FILTER STORE
@@ -72,22 +85,66 @@ export const useFilterActions = () => useFilterStore((state) => state.actions);
 //------------------------------------------------------------
 //-- BOOK STORE
 //------------------------------------------------------------
+interface BookState {
+  books: Book[];
+  currentBook: Book | undefined;
+  actions: {
+    getBookDetail: (bookId: string) => void;
+    getFilteredBooks: () => Book[];
+    updateUserBookData: (bookId: string, userBookData: BookUserData) => void;
+  };
+}
+
 export const useBookStore = create<BookState>((set, get) => ({
   books: [],
+  currentBook: undefined,
+  actions: {
+    getBookDetail: (bookId: string) =>
+      set((state) => ({
+        currentBook: state.books.find((book) => book._id === bookId),
+      })),
+    getFilteredBooks: () => get().books,
+    updateUserBookData: async (bookId, userBookData) => {
+      await saveUserBookData(bookId, userBookData);
+      set((state) => {
+        let newBooks = [];
+        for (let book of state.books) {
+          if (book._id === bookId) {
+            const newBook = { ...book, ...userBookData };
+            newBooks.push(newBook);
+          } else {
+            newBooks.push(book);
+          }
+        }
+        return {
+          books: newBooks,
+        };
+      });
+    },
+  },
 }));
 
+export const useBookActions = () => useBookStore((state) => state.actions);
+//------------------------------------------------------------
+//-- INIT Function
+//--  Performs initialization on app start
+//--  1. check for current user and "log" user in
+//--  2. Load books from local storage
+//--  3. IF currentUser found THEN
+//--      load user specific data from local storage
+//------------------------------------------------------------
+
+/**
+ * Where does log user in intersect with intialize?
+ * The log user in function needs to encapsulate more functionaliy
+ * Not the keyed book loading, but the merging of book data with user data
+ * We may JUST choose to LOAD book data again in the load user in
+ */
 export const onInitialize = async () => {
-  const currentUser = await loadCurrentUserFromStorage();
-  // const books = await useFilteredBooks();
-  const books = [];
-  useAuthStore.setState((state) => {
-    if (currentUser?.uid) {
-      // This would be where we load the user specific data into the store
-    }
-    return { currentUser };
-  });
-  useBookStore.setState((state) => ({
-    books,
-  }));
+  const currentUser = await loadFromAsyncStorage("currentUser");
+  // Log user in if exists
+  if (currentUser) {
+    await logUserIn(currentUser);
+  }
   return currentUser;
 };

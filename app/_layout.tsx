@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { useColorScheme, View, Text } from "react-native";
 import Drawer from "expo-router/drawer";
 import { Provider, useProtectedRoute } from "../auth/provider";
-import { useCurrentUser, onInitialize } from "../data/store";
+import { useCurrentUser, onInitialize, useIsLoggedIn } from "../data/store";
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -50,13 +50,9 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  // const onInitialize = useBookStore((state) => state.onInitialize);
-  const currentUser = useCurrentUser();
-  // const [isLoading, setIsLoading] = useState(true);
-  // console.log("CURRENT USER", currentUser);
-  useProtectedRoute(!!currentUser?.uid);
+  const loggedIn = useIsLoggedIn();
+  useProtectedRoute(loggedIn);
   const colorScheme = useColorScheme();
-  const segments = useSegments();
 
   return (
     <>

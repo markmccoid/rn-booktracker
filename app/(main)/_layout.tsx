@@ -13,10 +13,14 @@ import {
   Text,
   Linking,
   ScrollViewProps,
+  Pressable,
 } from "react-native";
 import Drawer from "expo-router/drawer";
 import { useAuth } from "../../auth/provider";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { refreshBooksFromDB } from "../../data/bookData";
+import { useBookStore } from "../../data/store";
+import { removeFromAsyncStorage } from "../../data/asyncStorage";
 
 export const unstable_settings = {
   // Used for `(foo)`
@@ -27,6 +31,8 @@ export const unstable_settings = {
 //-- Custom Drawer content
 //-- --------------------------------------
 function CustomDrawerContent(props) {
+  const books = useBookStore((state) => state.books);
+
   return (
     <DrawerContentScrollView {...props}>
       <DrawerItem
@@ -42,6 +48,17 @@ function CustomDrawerContent(props) {
       <Link href={"/settings"} onPress={() => props.navigation.closeDrawer()}>
         Settings
       </Link>
+
+      <Pressable onPress={refreshBooksFromDB}>
+        <Text>Refresh Books From DB</Text>
+      </Pressable>
+
+      <Pressable onPress={() => removeFromAsyncStorage("books")}>
+        <Text>Clear Books</Text>
+      </Pressable>
+      <View>
+        <Text>Books - {books.length}</Text>
+      </View>
     </DrawerContentScrollView>
   );
 }

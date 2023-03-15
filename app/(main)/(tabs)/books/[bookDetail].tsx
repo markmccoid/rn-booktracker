@@ -1,25 +1,44 @@
-import { View, Text, Button } from "react-native";
-import React from "react";
-import { useAuth } from "../../../../auth/provider";
+import { View, Text, Button, Switch } from "react-native";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { Stack, useSearchParams } from "expo-router";
-import { useLogUserOut } from "../../../../data/store";
+import {
+  useBookActions,
+  useBookStore,
+  logUserOut,
+} from "../../../../data/store";
 
 const BookDetail = () => {
-  const logUserOut = useLogUserOut();
-
+  const { getBookDetail, updateUserBookData } = useBookActions();
   const searchParams = useSearchParams();
+  const bookData = useBookStore((state) => state.currentBook);
+
+  useEffect(() => {
+    getBookDetail(searchParams.bookDetail);
+  }, [searchParams]);
+  const onSetFavorite = async () => {
+    // Need to merge data if already saved
+    // This is where we need a separate function into async
+    if (bookData?._id) {
+      await updateUserBookData(bookData?._id, {
+        favorite: !bookData?.favorite,
+      });
+      getBookDetail(searchParams.bookDetail);
+    }
+  };
 
   return (
     <View>
       <Stack.Screen
         options={{
-          headerTitle: searchParams.bookDetail,
+          headerTitle: bookData?.title,
           headerRight: () => {
             return <Text>H</Text>;
           },
         }}
       />
-      <Text>BookDetail</Text>
+      <Text>{bookData?.title}</Text>
+      <Text>{bookData?.author}</Text>
+      <Switch onValueChange={onSetFavorite} value={bookData?.favorite} />
       <Button onPress={() => logUserOut()} title="Sign Out" />
     </View>
   );

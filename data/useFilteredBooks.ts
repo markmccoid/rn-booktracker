@@ -3,6 +3,9 @@ import axios from "axios";
 import { useState } from "react";
 import { Filters, useAppliedFilters } from "./store";
 import { Book } from "./types";
+import Constants from "expo-constants";
+
+const { mongoAPIKey } = Constants?.manifest?.extra;
 
 const data = {
   collection: "Books",
@@ -17,8 +20,7 @@ const config = {
   headers: {
     "Content-Type": "application/json",
     "Access-Control-Request-Headers": "*",
-    "api-key":
-      "3e8ClzHXca82K2jMk7J6LXW2OJHNG5nRWbpspMq02tfjslEIWk1AmEqbF1zL6CKU",
+    "api-key": mongoAPIKey,
   },
 };
 

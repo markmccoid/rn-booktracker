@@ -9,32 +9,43 @@ import {
 import React, { useState } from "react";
 import { useAuth } from "../../auth/provider";
 import { Link } from "expo-router";
+
+import uuid from "react-native-uuid";
 import {
-  loadUsersFromStorage,
-  User,
-  saveUsersToStorage,
-  generateUserObject,
-} from "../../data/localData";
-import { removeFromAsyncStorage } from "../../data/asyncStorage";
-import { useLogUserIn } from "../../data/store";
+  loadFromAsyncStorage,
+  removeFromAsyncStorage,
+  saveToAsyncStorage,
+} from "../../data/asyncStorage";
+import { logUserIn } from "../../data/store";
+import { User } from "../../data/types";
+
+/**
+ * generateUserObject - helper function to create a userid (uid)
+ * sends back a user object
+ */
+const generateUserObject = (username: string): User => {
+  return {
+    uid: uuid.v4() as string,
+    username,
+  };
+};
 
 const SignIn = () => {
   const [newUser, setNewUser] = useState("");
   const [allUsers, setAllUsers] = React.useState<User[] | []>([]);
-  const logUserIn = useLogUserIn();
 
   //~~ User Add/delete functions
   const addNewUser = async () => {
     const newUserObj = generateUserObject(newUser);
     const newAllUsers = [newUserObj, ...allUsers];
     setAllUsers(newAllUsers);
-    await saveUsersToStorage(newAllUsers);
+    await saveToAsyncStorage("users", newAllUsers);
   };
 
   const deleteUser = async (uid: string) => {
     const newAllUsers = allUsers.filter((el) => el.uid !== uid);
     setAllUsers(newAllUsers);
-    await saveUsersToStorage(newAllUsers);
+    await saveToAsyncStorage("users", newAllUsers);
   };
 
   React.useEffect(() => {
@@ -44,7 +55,7 @@ const SignIn = () => {
     const loadUsers = async (loggedIn: boolean) => {
       if (loggedIn) return;
       // setIsLoading(true);
-      const loadedUsers = await loadUsersFromStorage();
+      const loadedUsers = await loadFromAsyncStorage("users");
       if (isMounted) {
         setAllUsers(loadedUsers || []);
         // setIsLoading(false);

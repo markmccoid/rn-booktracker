@@ -1,14 +1,16 @@
 import { Link } from "expo-router";
 import { View, Text, FlatList, Image } from "react-native";
+import { FlashList } from "@shopify/flash-list";
+
 import { Book } from "../../data/types";
 import BookListItem from "./BookListItem";
 
 type Props = {
-  books: Book[];
+  books: Book[] | [];
 };
 const BooksList = ({ books }: Props) => {
   return (
-    <View>
+    <View style={{ flex: 1, flexGrow: 1 }}>
       <Text>BooksList</Text>
       <FlatList
         data={books}
