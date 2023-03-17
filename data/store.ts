@@ -1,6 +1,8 @@
+import { FilterIcon } from "./../utils/IconComponents";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import {
+  BookMetadata,
   loadFromAsyncStorage,
   removeFromAsyncStorage,
   saveToAsyncStorage,
@@ -37,9 +39,11 @@ const useAuthStore = create<AuthState>((set, get) => ({
 export const logUserIn = async (user: User) => {
   const resp = await saveToAsyncStorage("currentUser", user);
   const booksKeyed = await loadFromAsyncStorage("books");
+  const bookMetadata = await loadFromAsyncStorage("bookMetadata");
+
   const books = await initalizeBookData(booksKeyed);
   useAuthStore.setState({ currentUser: user, isLoggedIn: true });
-  useBookStore.setState({ books });
+  useBookStore.setState({ books, bookMetadata });
 };
 
 export const logUserOut = async () => {
@@ -62,16 +66,30 @@ export type Filters = {
   author?: string;
   title?: string;
 };
-
+type CompareType = "equals" | "contains" | "bool";
+type FiltersCompareTypes = {
+  primaryCategory: CompareType;
+  secondaryCategory: CompareType;
+  author: CompareType;
+  title: CompareType;
+};
 interface FilterState {
-  applied: Filters | undefined;
+  applied: Filters;
+  filterCompareTypes: FiltersCompareTypes;
   actions: {
     addFilter: (filter: Filters) => void;
   };
 }
 
+const defaultFilterCompareTypes: FiltersCompareTypes = {
+  primaryCategory: "equals",
+  secondaryCategory: "equals",
+  author: "contains",
+  title: "contains",
+};
 const useFilterStore = create<FilterState>((set) => ({
   applied: {},
+  filterCompareTypes: defaultFilterCompareTypes,
   actions: {
     addFilter: (filter) => {
       set((state) => ({ applied: { ...state.applied, ...filter } }));
@@ -80,6 +98,8 @@ const useFilterStore = create<FilterState>((set) => ({
 }));
 
 export const useAppliedFilters = () => useFilterStore((state) => state.applied);
+export const usefilterCompareTypes = () =>
+  useFilterStore((state) => state.filterCompareTypes);
 export const useFilterActions = () => useFilterStore((state) => state.actions);
 
 //------------------------------------------------------------
@@ -88,9 +108,9 @@ export const useFilterActions = () => useFilterStore((state) => state.actions);
 interface BookState {
   books: Book[];
   currentBook: Book | undefined;
+  bookMetadata: BookMetadata;
   actions: {
     getBookDetail: (bookId: string) => void;
-    getFilteredBooks: () => Book[];
     updateUserBookData: (bookId: string, userBookData: BookUserData) => void;
   };
 }
@@ -98,12 +118,17 @@ interface BookState {
 export const useBookStore = create<BookState>((set, get) => ({
   books: [],
   currentBook: undefined,
+  bookMetadata: {
+    categoryMap: {},
+    primaryCategories: [],
+    secondaryCategories: [],
+    genres: [],
+  },
   actions: {
     getBookDetail: (bookId: string) =>
       set((state) => ({
         currentBook: state.books.find((book) => book._id === bookId),
       })),
-    getFilteredBooks: () => get().books,
     updateUserBookData: async (bookId, userBookData) => {
       await saveUserBookData(bookId, userBookData);
       set((state) => {
@@ -125,6 +150,59 @@ export const useBookStore = create<BookState>((set, get) => ({
 }));
 
 export const useBookActions = () => useBookStore((state) => state.actions);
+export const getFilteredBooks = () => {
+  const filters = useAppliedFilters();
+  const compareTypes = usefilterCompareTypes();
+
+  const books = useBookStore((state) => state.books);
+
+  let bookKeep = [];
+
+  for (const book of books) {
+    bookKeep.push(book);
+    for (const [filterFieldName, filterValue] of Object.entries(filters)) {
+      const bookValue = book[filterFieldName];
+      const compareType = compareTypes[filterFieldName];
+      // returns bool based on if match
+      const filterMatch = checkFilter(filterValue, bookValue, compareType);
+      // If one of the filters for the books fails, the remove the book
+      // from the array and continue with next book
+      if (!filterMatch) {
+        bookKeep.pop();
+        break;
+      }
+    }
+  }
+  return bookKeep;
+};
+
+//!  NEED TO take into account if filter value is an array
+//!  Maybe also if book value is an Array.  Genres and Tags will be arrays.
+function checkFilter(
+  filterValue: string | string[] | boolean,
+  bookValue: string | string[] | boolean,
+  compareType: CompareType
+) {
+  // Undefined filter values won't be checked.
+  // If you send in a "false" for a bool check it wouldn't get through
+  // So we add the explicit check for undefined.
+  if (filterValue !== undefined) {
+    // console.log('IN COMP', compareType, filterValue, bookValue, bookValue.includes(bookValue))
+    if (compareType === "equals") {
+      return filterValue === bookValue;
+    }
+    if (compareType === "contains") {
+      if (typeof filterValue === "string" && typeof bookValue === "string") {
+        return bookValue.toLowerCase().includes(filterValue.toLowerCase());
+      }
+    }
+
+    if (compareType === "bool") {
+      return filterValue === !!bookValue;
+    }
+  }
+  return true;
+}
 //------------------------------------------------------------
 //-- INIT Function
 //--  Performs initialization on app start

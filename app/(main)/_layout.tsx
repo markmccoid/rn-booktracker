@@ -6,7 +6,7 @@ import {
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Link, SplashScreen, Stack, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   useColorScheme,
   View,
@@ -30,9 +30,15 @@ export const unstable_settings = {
 //-- --------------------------------------
 //-- Custom Drawer content
 //-- --------------------------------------
+
 function CustomDrawerContent(props) {
   const books = useBookStore((state) => state.books);
-
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshFromDatabase = async () => {
+    setIsRefreshing(true);
+    await refreshBooksFromDB();
+    setIsRefreshing(false);
+  };
   return (
     <DrawerContentScrollView {...props}>
       <DrawerItem
@@ -49,8 +55,12 @@ function CustomDrawerContent(props) {
         Settings
       </Link>
 
-      <Pressable onPress={refreshBooksFromDB}>
-        <Text>Refresh Books From DB</Text>
+      <Pressable onPress={refreshFromDatabase}>
+        {isRefreshing ? (
+          <Text>Refreshing...</Text>
+        ) : (
+          <Text>Refresh Books From DB</Text>
+        )}
       </Pressable>
 
       <Pressable onPress={() => removeFromAsyncStorage("books")}>

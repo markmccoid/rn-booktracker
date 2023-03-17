@@ -7,12 +7,19 @@ type StorageKeys =
   | "currentUser"
   | "books"
   | "bookUserData"
+  | "bookMetadata"
   | "tagData"
   | "settings"
   | "savedFilters"
   | "dropboxToken";
-
-type Data = User | Dictionary<Book> | Record<string, Book>;
+export type CategoryMap = Record<string, string[]>;
+export type BookMetadata = {
+  categoryMap: CategoryMap;
+  primaryCategories: string[];
+  secondaryCategories: string[];
+  genres: string[];
+};
+type Data = User | Dictionary<Book> | Record<string, Book> | BookMetadata;
 // --------------------------------------------
 // -- LOAD passed key from Local Storage
 // --------------------------------------------

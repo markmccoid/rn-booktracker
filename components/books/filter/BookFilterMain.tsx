@@ -1,16 +1,23 @@
+import { filter } from "lodash";
 import { useState } from "react";
 import { View, Text, Pressable, TextInput } from "react-native";
-import { useAppliedFilters, useFilterActions } from "../../../data/store";
+import {
+  useAppliedFilters,
+  useBookActions,
+  useBookStore,
+  useFilterActions,
+} from "../../../data/store";
+import Categories from "./Categories";
 
 const BookFilterMain = () => {
   const filterActions = useFilterActions();
   const filters = useAppliedFilters();
+  const metadata = useBookStore((state) => state.bookMetadata);
 
   const [author, setAuthor] = useState(filters?.author || "");
   const [title, setTitle] = useState(filters?.title || "");
   return (
     <View>
-      <Text>BookFilterMain</Text>
       <Text>FILTERS: {JSON.stringify(filters)}</Text>
       <View
         style={{
@@ -56,7 +63,8 @@ const BookFilterMain = () => {
           <Text>Add</Text>
         </Pressable>
       </View>
-      <Pressable
+      <Categories />
+      {/* <Pressable
         style={{ padding: 5, margin: 2, borderWidth: 1 }}
         onPress={() => {
           filterActions.addFilter({
@@ -77,7 +85,7 @@ const BookFilterMain = () => {
         }}
       >
         <Text>Horror</Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 };
