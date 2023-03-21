@@ -14,7 +14,8 @@ import {
 } from "./dataBridge";
 
 import { Book, BookUserData, User } from "./types";
-import { useFilteredBooks } from "./useFilteredBooks";
+import { useEffect, useState } from "react";
+// import { useFilteredBooks } from "./useFilteredBooks";
 
 //------------------------------------------------------------
 //-- AUTH STORE
@@ -93,6 +94,8 @@ const useFilterStore = create<FilterState>((set) => ({
   actions: {
     addFilter: (filter) => {
       set((state) => ({ applied: { ...state.applied, ...filter } }));
+      // const filteredBooks = getFilteredBooks();
+      // useBookStore.setState({ filteredBooks: filteredBooks.books });
     },
   },
 }));
@@ -107,6 +110,7 @@ export const useFilterActions = () => useFilterStore((state) => state.actions);
 //------------------------------------------------------------
 interface BookState {
   books: Book[];
+  filteredBooks: Book[];
   currentBook: Book | undefined;
   bookMetadata: BookMetadata;
   actions: {
@@ -117,6 +121,7 @@ interface BookState {
 
 export const useBookStore = create<BookState>((set, get) => ({
   books: [],
+  filteredBooks: [],
   currentBook: undefined,
   bookMetadata: {
     categoryMap: {},
@@ -150,15 +155,20 @@ export const useBookStore = create<BookState>((set, get) => ({
 }));
 
 export const useBookActions = () => useBookStore((state) => state.actions);
+//-- --------------------------------------------
+//~ Filter Books
+//-- --------------------------------------------
 export const getFilteredBooks = () => {
-  const filters = useAppliedFilters();
-  const compareTypes = usefilterCompareTypes();
+  const filters = useFilterStore.getState().applied;
+  const compareTypes = useFilterStore.getState().filterCompareTypes;
+  const books = useBookStore.getState().books;
 
-  const books = useBookStore((state) => state.books);
-
-  let bookKeep = [];
+  let bookKeep: Book[] = [];
 
   for (const book of books) {
+    if (bookKeep.length > 5000) {
+      break;
+    }
     bookKeep.push(book);
     for (const [filterFieldName, filterValue] of Object.entries(filters)) {
       const bookValue = book[filterFieldName];
@@ -173,7 +183,84 @@ export const getFilteredBooks = () => {
       }
     }
   }
-  return bookKeep;
+  console.log("inGetFilteredBooks", bookKeep.length);
+  // return { books: bookKeep, bookStats: getBooksStats(bookKeep) };
+  return { books: bookKeep, bookStats: {} };
+};
+//!!!!!!!!!!!!!
+export const useFilteredBooks = () => {
+  const filters = useAppliedFilters();
+  const compareTypes = usefilterCompareTypes();
+  const books = useBookStore((state) => state.books);
+  const [isLoading, setIsLoading] = useState(true);
+  const [output, setOutput] = useState<Book[]>();
+
+  useEffect(() => {
+    setIsLoading(true);
+    const actualFilter = () => {
+      let bookKeep: Book[] = [];
+      console.log("Start", new Date().getMilliseconds());
+      for (const book of books) {
+        if (bookKeep.length > 5000) {
+          break;
+        }
+        bookKeep.push(book);
+        for (const [filterFieldName, filterValue] of Object.entries(filters)) {
+          const bookValue = book[filterFieldName];
+          const compareType = compareTypes[filterFieldName];
+          // returns bool based on if match
+          const filterMatch = checkFilter(filterValue, bookValue, compareType);
+          // If one of the filters for the books fails, the remove the book
+          // from the array and continue with next book
+          if (!filterMatch) {
+            bookKeep.pop();
+            break;
+          }
+        }
+      }
+      setOutput(bookKeep);
+      setIsLoading(false);
+    };
+    const filterTimeout = async () => {
+      setTimeout(actualFilter, 0);
+    };
+    const filterPromise = async () =>
+      new Promise((resolve) => {
+        setTimeout(() => {
+          actualFilter();
+          resolve(1);
+        }, 1);
+      });
+    console.log("END", new Date().getMilliseconds());
+    // const filter = async () => {
+    //   // setTimeout(() => {}, 0);
+    //   await asyncFilter();
+    // };
+    filterTimeout();
+  }, [filters]);
+  // let bookKeep: Book[] = [];
+  // console.log("Start", new Date().getSeconds());
+  // for (const book of books) {
+  //   if (bookKeep.length > 5000) {
+  //     break;
+  //   }
+  //   bookKeep.push(book);
+  //   for (const [filterFieldName, filterValue] of Object.entries(filters)) {
+  //     const bookValue = book[filterFieldName];
+  //     const compareType = compareTypes[filterFieldName];
+  //     // returns bool based on if match
+  //     const filterMatch = checkFilter(filterValue, bookValue, compareType);
+  //     // If one of the filters for the books fails, the remove the book
+  //     // from the array and continue with next book
+  //     if (!filterMatch) {
+  //       bookKeep.pop();
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // return { books: bookKeep, bookStats: getBooksStats(bookKeep) };
+  return { isLoading, books: output };
 };
 
 //!  NEED TO take into account if filter value is an array
@@ -203,6 +290,23 @@ function checkFilter(
   }
   return true;
 }
+
+//--------------------------------------
+//~ Return stats on passed book array
+//--------------------------------------
+export function getBooksStats(books: Book[]) {
+  let bookStats = {};
+  for (const book of books) {
+    bookStats = {
+      ...bookStats,
+      [book.author]: bookStats?.[book.author]
+        ? bookStats?.[book.author] + 1
+        : 1,
+    };
+  }
+  return bookStats;
+}
+
 //------------------------------------------------------------
 //-- INIT Function
 //--  Performs initialization on app start

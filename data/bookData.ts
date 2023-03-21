@@ -60,28 +60,11 @@ export const refreshBooksFromDB = async () => {
 };
 
 //--------------------------------------
-//-- Extract primaryCats, secondaryCats and Genres
-//-- from passed books array
+//~ Extract primaryCats, secondaryCats and Genres
+//~ from passed books array
 //--------------------------------------
-// function analyzeBooks(books: DBBook[]) {
-//   const primaryCategories = {};
-//   const secondaryCategories = new Set();
-//   const genres = new Set();
-
-//   for (const book of books) {
-//     primaryCategories[book.primaryCategory];
-//     secondaryCategories.add(book.secondaryCategory);
-//     book.genres.map((genre) => genres.add(genre));
-//   }
-//   return {
-//     primaryCategories: Array.from(primaryCategories) as string[],
-//     secondaryCategories: Array.from(secondaryCategories) as string[],
-//     genres: Array.from(genres) as string[],
-//   };
-// }
-
 function analyzeBooks(books: DBBook[]) {
-  let categoryMap = {};
+  let categoryMap: Record<string, Set<string>> = {};
   const primaryCategories = new Set();
   const secondaryCategories = new Set();
   const genres = new Set();
@@ -107,7 +90,7 @@ function analyzeBooks(books: DBBook[]) {
     },
     {}
   );
-  // console.log('FINAL', categoryMapFinal)
+
   return {
     primaryCategories: Array.from(primaryCategories) as string[],
     secondaryCategories: Array.from(secondaryCategories) as string[],

@@ -1,5 +1,5 @@
 import { filter } from "lodash";
-import { useState } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { View, Text, Pressable, TextInput } from "react-native";
 import {
   useAppliedFilters,
@@ -8,84 +8,48 @@ import {
   useFilterActions,
 } from "../../../data/store";
 import Categories from "./Categories";
+import TextFilter from "./TextFilter";
+import { useFilteredBooks, getFilteredBooks } from "../../../data/store";
+import { ScrollView } from "react-native-gesture-handler";
 
 const BookFilterMain = () => {
-  const filterActions = useFilterActions();
   const filters = useAppliedFilters();
-  const metadata = useBookStore((state) => state.bookMetadata);
-
-  const [author, setAuthor] = useState(filters?.author || "");
-  const [title, setTitle] = useState(filters?.title || "");
+  const { books: filteredBooks, isLoading } = useFilteredBooks(); // useBookStore((state) => state.filteredBooks);
+  const [books, setBooks] = useState();
+  console.log("filteredbooks", filteredBooks?.length, isLoading);
+  // const bookStats = useBookStats();
+  //! Create a new store hook to get stats on books from filter
+  //! number of books, % from audible/dropbox, distinct authors, titles by author?
+  // useEffect(() => {
+  //   setBooks(getFilteredBooks().books);
+  // }, [filters]);
   return (
     <View>
-      <Text>FILTERS: {JSON.stringify(filters)}</Text>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-        }}
-      >
-        <Text>Author: </Text>
-        <TextInput
-          style={{
-            borderWidth: 1,
-            padding: 4,
-            marginVertical: 2,
-            marginHorizontal: 5,
-            flexGrow: 1,
-          }}
-          value={author}
-          onChangeText={(e) => setAuthor(e)}
-        />
-        <Pressable onPress={() => filterActions.addFilter({ author })}>
-          <Text>Add</Text>
-        </Pressable>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-        }}
-      >
-        <Text>Title: </Text>
-        <TextInput
-          style={{
-            borderWidth: 1,
-            padding: 4,
-            marginVertical: 2,
-            marginHorizontal: 5,
-            flexGrow: 1,
-          }}
-          value={title}
-          onChangeText={(e) => setTitle(e)}
-        />
-        <Pressable onPress={() => filterActions.addFilter({ title })}>
-          <Text>Add</Text>
-        </Pressable>
-      </View>
       <Categories />
-      {/* <Pressable
-        style={{ padding: 5, margin: 2, borderWidth: 1 }}
-        onPress={() => {
-          filterActions.addFilter({
-            primaryCategory: "Fiction",
-            secondaryCategory: "SciFi",
-          });
-        }}
-      >
-        <Text>SciFi</Text>
-      </Pressable>
-      <Pressable
-        style={{ padding: 5, margin: 2, borderWidth: 1 }}
-        onPress={() => {
-          filterActions.addFilter({
-            primaryCategory: "Fiction",
-            secondaryCategory: "Horror",
-          });
-        }}
-      >
-        <Text>Horror</Text>
-      </Pressable> */}
+
+      <View className="flex flex-row ">
+        <TextFilter filterName="title" label="Title" />
+        <TextFilter filterName="author" label="Author" />
+      </View>
+
+      <Text>FILTERS: {JSON.stringify(filters)}</Text>
+      <Text>{filteredBooks?.length || "None"}</Text>
+      {isLoading ? (
+        <View>
+          <Text>Loading...</Text>
+        </View>
+      ) : (
+        <ScrollView>
+          {filteredBooks &&
+            filteredBooks.map((book) => (
+              <View key={book._id}>
+                <Text>
+                  {book.title} - {book.author}
+                </Text>
+              </View>
+            ))}
+        </ScrollView>
+      )}
     </View>
   );
 };

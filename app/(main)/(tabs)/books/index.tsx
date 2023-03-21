@@ -7,7 +7,7 @@ import {
   useBookActions,
   useBookStore,
 } from "../../../../data/store";
-import { getFilteredBooks } from "../../../../data/store";
+import { useFilteredBooks } from "../../../../data/store";
 import BookList from "../../../../components/books/BookList";
 
 //---------------------------------------
@@ -16,10 +16,10 @@ import BookList from "../../../../components/books/BookList";
 const BookListIndex = () => {
   // const { bookData } = useAuth();
   // const books = useBookStore((state) => state.books);
-  // const books = useBookActions().getFilteredBooks();
+  // const books = useBookActions().useFilteredBooks();
   // const books = useBookStore((state) => state.books);
   // const filters = useAppliedFilters();
-  const books = getFilteredBooks();
+  const { books } = useFilteredBooks();
   // console.log("Filters", filters);
 
   // React.useEffect(() => {
