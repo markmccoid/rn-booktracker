@@ -5,7 +5,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Link, SplashScreen, Stack, useSegments } from "expo-router";
+import { Link, SplashScreen, Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   useColorScheme,
@@ -18,8 +18,8 @@ import {
 import Drawer from "expo-router/drawer";
 import { useAuth } from "../../auth/provider";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
-import { refreshBooksFromDB } from "../../data/bookData";
-import { useBookStore } from "../../data/store";
+// import { refreshBooksFromDB } from "../../data/bookData";
+import { useBookStore, logUserOut } from "../../data/store";
 import { removeFromAsyncStorage } from "../../data/asyncStorage";
 
 export const unstable_settings = {
@@ -32,28 +32,45 @@ export const unstable_settings = {
 //-- --------------------------------------
 
 function CustomDrawerContent(props) {
+  const router = useRouter();
   const books = useBookStore((state) => state.books);
+  const refreshBooksFromDB = useBookStore(
+    (state) => state.actions.refreshBooksFromDB
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshFromDatabase = async () => {
     setIsRefreshing(true);
     await refreshBooksFromDB();
     setIsRefreshing(false);
   };
+
   return (
     <DrawerContentScrollView {...props}>
-      <DrawerItem
+      {/* <DrawerItem
         label="Website"
         onPress={() => Linking.openURL("https://www.expo.dev/")}
+      /> */}
+      <DrawerItem
+        label="Home"
+        onPress={() => {
+          router.push("/books");
+          props.navigation.closeDrawer();
+        }}
       />
-      <Link href={"/books"} onPress={() => props.navigation.closeDrawer()}>
-        Home
-      </Link>
-      <Link href={"/tags"} onPress={() => props.navigation.closeDrawer()}>
-        Tags
-      </Link>
-      <Link href={"/settings"} onPress={() => props.navigation.closeDrawer()}>
-        Settings
-      </Link>
+      <DrawerItem
+        label="Tags"
+        onPress={() => {
+          router.push("/tags");
+          props.navigation.closeDrawer();
+        }}
+      />
+      <DrawerItem
+        label="Settings"
+        onPress={() => {
+          router.push("/settings");
+          props.navigation.closeDrawer();
+        }}
+      />
 
       <Pressable onPress={refreshFromDatabase}>
         {isRefreshing ? (
@@ -69,6 +86,9 @@ function CustomDrawerContent(props) {
       <View>
         <Text>Books - {books.length}</Text>
       </View>
+      <Pressable onPress={logUserOut}>
+        <Text>Sign Out</Text>
+      </Pressable>
     </DrawerContentScrollView>
   );
 }

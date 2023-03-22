@@ -1,5 +1,6 @@
 import {
   CategoryMap,
+  loadFromAsyncStorage,
   removeFromAsyncStorage,
   saveToAsyncStorage,
 } from "./asyncStorage";
@@ -46,17 +47,42 @@ const getAllBooks = async (): Promise<Book[]> => {
   return books;
 };
 
-export const refreshBooksFromDB = async () => {
-  const books = await getAllBooks();
-  const bookMetadata = analyzeBooks(books);
+//---------------------------------------------
+//-- Load BOOK DATA
+//---------------------------------------------
+export const loadBookDataFromStorage = async () => {
+  let books = await loadFromAsyncStorage("books");
+  if (!books) {
+    books = await getAndStoreBooksToStorage();
+  }
+  return books as Record<string, DBBook>;
+};
 
+//---------------------------------------------
+//-- Get and Store books to storage from DB
+//---------------------------------------------
+export const getAndStoreBooksToStorage = async () => {
+  const books = await getAllBooks();
   const keyedBooks = keyBy(books, "_id");
-  // console.log("keyed", keyedBooks);
   await saveToAsyncStorage("books", keyedBooks);
+  return books;
+};
+
+//---------------------------------------------
+//-- REFRESH Books from DB
+//---------------------------------------------
+export const onRefreshBooksFromDB = async () => {
+  const books = await getAndStoreBooksToStorage();
+  const keyedBooks = keyBy(books, "_id"); //
+  // const books = await getAllBooks(); //
+  // await saveToAsyncStorage("books", keyedBooks); //
+
+  const bookMetadata = analyzeBooks(books);
   await removeFromAsyncStorage("bookMetadata");
   await saveToAsyncStorage("bookMetadata", bookMetadata);
   const mergedBooks = await initalizeBookData(keyedBooks);
-  useBookStore.setState({ books: mergedBooks, bookMetadata });
+  // useBookStore.setState({ books: mergedBooks, bookMetadata });
+  return { books: mergedBooks, bookMetadata };
 };
 
 //--------------------------------------

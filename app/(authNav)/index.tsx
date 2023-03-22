@@ -75,16 +75,17 @@ const SignIn = () => {
           value={newUser}
           onChangeText={(e) => setNewUser(e)}
         />
-        <Pressable
-          onPress={addNewUser}
-          style={{
-            padding: 8,
-            borderWidth: 1,
-            margin: 2,
-            backgroundColor: "blue",
-          }}
-        >
-          <Text style={{ color: "white" }}>Add</Text>
+        <Pressable onPress={addNewUser}>
+          <View
+            style={{
+              padding: 8,
+              borderWidth: 1,
+              margin: 2,
+              backgroundColor: "blue",
+            }}
+          >
+            <Text style={{ color: "white" }}>Add</Text>
+          </View>
         </Pressable>
       </View>
       <Text>Users</Text>

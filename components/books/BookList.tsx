@@ -4,11 +4,13 @@ import { FlashList } from "@shopify/flash-list";
 
 import { Book } from "../../data/types";
 import BookListItem from "./BookListItem";
+import { useFilteredBooks } from "../../data/store";
 
 type Props = {
   books: Book[] | [];
 };
-const BooksList = ({ books }: Props) => {
+const BooksList = () => {
+  const { books } = useFilteredBooks();
   return (
     <View style={{ flex: 1, flexGrow: 1 }}>
       <Text>BooksList</Text>
