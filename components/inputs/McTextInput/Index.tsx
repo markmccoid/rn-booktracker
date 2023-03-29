@@ -1,28 +1,29 @@
 import { useCallback, useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
-import { useAppliedFilters, useFilterActions } from "../../../data/store";
 import debounce from "lodash/debounce";
 
-import type { Filters } from "../../../data/store";
-
 type Props = {
-  filterName: keyof Filters;
+  initialValue: string;
   label: string;
+  onValueChange: (e: string) => void;
+  debounceTime?: number;
 };
 
-const TextFilter = ({ filterName, label }: Props) => {
-  const filterActions = useFilterActions();
-  const filters = useAppliedFilters();
+const McTextInput = ({
+  label,
+  initialValue = "",
+  onValueChange,
+  debounceTime = 500,
+}: Props) => {
+  // const filterActions = useFilterActions();
+  // const filters = useAppliedFilters();
   const [isFocused, setIsFocused] = useState(false);
   // const metadata = useBookStore((state) => state.bookMetadata);
 
-  const [filterValue, setFilterValue] = useState(filters?.[filterName] || "");
+  const [inputValue, setInputValue] = useState(initialValue);
 
-  const setFilter = useCallback(
-    debounce(
-      (filterValue) => filterActions.addFilter({ [filterName]: filterValue }),
-      300
-    ),
+  const handleValueChange = useCallback(
+    debounce((inputValue) => onValueChange(inputValue), debounceTime),
     []
   );
 
@@ -40,16 +41,17 @@ const TextFilter = ({ filterName, label }: Props) => {
           flexGrow: 1,
           borderColor: `${isFocused ? "green" : "black"}`,
         }}
-        value={filterValue}
+        value={inputValue}
         onChangeText={(e) => {
-          setFilterValue(e);
-          setFilter(e);
+          setInputValue(e);
+          handleValueChange(e);
         }}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        clearButtonMode="while-editing"
       />
     </View>
   );
 };
 
-export default TextFilter;
+export default McTextInput;

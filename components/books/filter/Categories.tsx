@@ -32,17 +32,26 @@ const Categories = () => {
     []
   );
   const ddSecondaryCategories = useMemo(() => {
-    if (!primaryCategory) {
+    if (!localPrimary) {
       return buildDropdown(secondaryCategories);
     }
-    return buildDropdown(categoryMap[primaryCategory]);
-  }, [primaryCategory]);
+    const newSecondaryCatList = categoryMap[localPrimary];
+    if (!newSecondaryCatList.includes(localSecondary)) {
+      setLocalSecondary(undefined);
+    }
+    return buildDropdown(newSecondaryCatList);
+  }, [localPrimary]);
 
   useEffect(() => {
-    filterActions.addFilter({
-      primaryCategory: localPrimary,
-      secondaryCategory: localSecondary,
-    });
+    setTimeout(
+      () =>
+        filterActions.addFilter({
+          primaryCategory: localPrimary,
+          secondaryCategory: localSecondary,
+        }),
+      0
+    );
+    console.log("done adding filters");
   }, [localPrimary, localSecondary]);
 
   return (
@@ -54,6 +63,7 @@ const Categories = () => {
             <AntDesign name="closecircle" size={16} color="black" />
           </Pressable>
         </View>
+
         <Dropdown
           data={ddPrimaryCategories}
           // value={primaryCategory}
@@ -89,6 +99,8 @@ const Categories = () => {
           onChange={(item) => {
             setLocalPrimary(item.value);
             setIsFocus(false);
+            // filterActions.addFilter({ primaryCategory: item.value });
+            console.log("dont adding prime");
             // setPrimaryCategory((prev) => {
             //   if (prev !== item.value) {
             //     setSecondaryCategory(undefined);
@@ -131,6 +143,7 @@ const Categories = () => {
             // setSecondaryCategory(item.value);
             setLocalSecondary(item.value);
             setIsFocus(false);
+            // filterActions.addFilter({ secondaryCategory: item.value });
           }}
         />
       </View>

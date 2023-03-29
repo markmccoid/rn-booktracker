@@ -3,40 +3,52 @@ import { useCallback, useState, useMemo, useEffect } from "react";
 import { View, Text, Pressable, TextInput } from "react-native";
 import { MotiView } from "moti";
 
-import {
-  useAppliedFilters,
-  useBookActions,
-  useBookStore,
-  useFilterActions,
-} from "../../../data/store";
 import Categories from "./Categories";
 import TextFilter from "./TextFilter";
-import { useFilteredBooks, getFilteredBooks } from "../../../data/store";
+import {
+  useAppliedFilters,
+  useFilterActions,
+  useFilteredBooks,
+} from "../../../data/store";
 import { FlatList } from "react-native-gesture-handler";
-import LottieView from "lottie-react-native";
+import SortMain from "../sort/SortMain";
+import SourceFilter from "./SourceFilter";
+import McTextInput from "../../inputs/McTextInput/Index";
 
 const BookFilterMain = () => {
-  const filters = useAppliedFilters();
   const { books: filteredBooks, isLoading } = useFilteredBooks(); // useBookStore((state) => state.filteredBooks);
-  const [books, setBooks] = useState();
+  const filterActions = useFilterActions();
+  const filters = useAppliedFilters();
 
-  // const bookStats = useBookStats();
-  //! Create a new store hook to get stats on books from filter
-  //! number of books, % from audible/dropbox, distinct authors, titles by author?
-  // useEffect(() => {
-  //   setBooks(getFilteredBooks().books);
-  // }, [filters]);
   return (
     <View>
       <Categories />
 
       <View className="flex flex-row ">
-        <TextFilter filterName="title" label="Title" />
-        <TextFilter filterName="author" label="Author" />
+        {/* <TextFilter filterName="title" label="Title" />
+        <TextFilter filterName="author" label="Author" /> */}
+        <McTextInput
+          initialValue={filters.title || ""}
+          label="Title"
+          onValueChange={(val) => filterActions.addFilter({ title: val })}
+        />
+        <McTextInput
+          initialValue={filters.author || ""}
+          label="Author"
+          onValueChange={(val) => filterActions.addFilter({ author: val })}
+        />
       </View>
 
+      <View className="flex flex-row border border-red-900">
+        <View className="flex flex-col">
+          <SourceFilter />
+        </View>
+        <SortMain />
+      </View>
       {/* <Text>FILTERS: {JSON.stringify(filters)}</Text> */}
-      <Text>{filteredBooks?.length || "None"}</Text>
+      <View className="p-2 border-b border-b-orange-700 mb-2">
+        <Text>{`Books Found -> ${filteredBooks?.length || "None"}`}</Text>
+      </View>
 
       {isLoading ? (
         <MotiView
@@ -65,3 +77,6 @@ const BookFilterMain = () => {
 };
 
 export default BookFilterMain;
+function useAppliedActions(): { setSort: any } {
+  throw new Error("Function not implemented.");
+}

@@ -9,10 +9,7 @@ import BookList from "../../../../components/books/BookList";
 //---------------------------------------
 const BookListIndex = () => {
   return (
-    <View style={{ flex: 1 }}>
-      <Text className="font-extrabold ">My Books</Text>
-      <Link href="./books/bookFilter">Filter</Link>
-
+    <View style={{ flex: 1, marginTop: 4 }}>
       {/* <Text>Book Detail - {books?.length}</Text> */}
 
       <View style={{ flex: 1, flexGrow: 1 }}>

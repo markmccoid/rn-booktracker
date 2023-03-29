@@ -40,6 +40,15 @@ const getAllBooks = async (): Promise<Book[]> => {
   try {
     const holdBooks = await (await axios(config)).data;
     books = holdBooks.documents;
+    // Loop through books and update any that don't have a published year
+    // using the release date if available
+    for (const book of books) {
+      if (!book.publishedYear || book.publishedYear === 0) {
+        if (book?.releaseDate) {
+          book.publishedYear = new Date(book.releaseDate).getFullYear();
+        }
+      }
+    }
   } catch (error) {
     console.log("Axios Error getting books", error);
   }

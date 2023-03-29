@@ -1,4 +1,3 @@
-import { FilterIcon } from "./../utils/IconComponents";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import {
@@ -16,6 +15,8 @@ import {
 import { loadBookDataFromStorage, onRefreshBooksFromDB } from "./bookData";
 import { Book, BookUserData, User } from "./types";
 import { useEffect, useState } from "react";
+
+import orderBy from "lodash/orderBy";
 // import { useFilteredBooks } from "./useFilteredBooks";
 
 //------------------------------------------------------------
@@ -67,6 +68,7 @@ export type Filters = {
   secondaryCategory?: string;
   author?: string;
   title?: string;
+  source?: "dropbox" | "audible";
 };
 type CompareType = "equals" | "contains" | "bool";
 type FiltersCompareTypes = {
@@ -74,12 +76,29 @@ type FiltersCompareTypes = {
   secondaryCategory: CompareType;
   author: CompareType;
   title: CompareType;
+  source: CompareType;
 };
+type Sort =
+  | "publishedYear"
+  | "author"
+  | "title"
+  | "source"
+  | "secondaryCategory";
+
+export type AppliedSort = {
+  sortField: Sort;
+  displayName: string;
+  sortDirection: "asc" | "desc";
+  active: boolean;
+  pos: number;
+}[];
 interface FilterState {
   applied: Filters;
+  appliedSort: AppliedSort;
   filterCompareTypes: FiltersCompareTypes;
   actions: {
     addFilter: (filter: Filters) => void;
+    setSort: (sort: AppliedSort) => void;
   };
 }
 
@@ -88,9 +107,42 @@ const defaultFilterCompareTypes: FiltersCompareTypes = {
   secondaryCategory: "equals",
   author: "contains",
   title: "contains",
+  source: "equals",
 };
+
+const defaultSort: AppliedSort = [
+  {
+    sortField: "publishedYear",
+    displayName: "Pub Year",
+    sortDirection: "desc",
+    active: true,
+    pos: 0,
+  },
+  {
+    sortField: "author",
+    displayName: "Author",
+    sortDirection: "desc",
+    active: true,
+    pos: 1,
+  },
+  {
+    sortField: "title",
+    displayName: "Title",
+    sortDirection: "desc",
+    active: true,
+    pos: 2,
+  },
+  {
+    sortField: "source",
+    displayName: "Source",
+    sortDirection: "desc",
+    active: true,
+    pos: 3,
+  },
+];
 const useFilterStore = create<FilterState>((set) => ({
   applied: {},
+  appliedSort: defaultSort,
   filterCompareTypes: defaultFilterCompareTypes,
   actions: {
     addFilter: (filter) => {
@@ -98,10 +150,16 @@ const useFilterStore = create<FilterState>((set) => ({
       // const filteredBooks = getFilteredBooks();
       // useBookStore.setState({ filteredBooks: filteredBooks.books });
     },
+    // currently need the full sort array
+    setSort: (sort) => {
+      set((state) => ({ appliedSort: sort }));
+    },
   },
 }));
 
 export const useAppliedFilters = () => useFilterStore((state) => state.applied);
+export const useAppliedSort = () =>
+  useFilterStore((state) => state.appliedSort);
 export const usefilterCompareTypes = () =>
   useFilterStore((state) => state.filterCompareTypes);
 export const useFilterActions = () => useFilterStore((state) => state.actions);
@@ -115,7 +173,7 @@ interface BookState {
   currentBook: Book | undefined;
   bookMetadata: BookMetadata;
   actions: {
-    getBookDetail: (bookId: string) => void;
+    getBookDetail: (bookId: string) => Book | undefined;
     updateUserBookData: (bookId: string, userBookData: BookUserData) => void;
     refreshBooksFromDB: () => void;
   };
@@ -132,10 +190,13 @@ export const useBookStore = create<BookState>((set, get) => ({
     genres: [],
   },
   actions: {
-    getBookDetail: (bookId: string) =>
+    getBookDetail: (bookId: string) => {
+      const bookDetail = get().books.find((book) => book._id === bookId);
       set((state) => ({
-        currentBook: state.books.find((book) => book._id === bookId),
-      })),
+        currentBook: bookDetail,
+      }));
+      return bookDetail;
+    },
     updateUserBookData: async (bookId, userBookData) => {
       await saveUserBookData(bookId, userBookData);
       set((state) => {
@@ -161,40 +222,13 @@ export const useBookStore = create<BookState>((set, get) => ({
 }));
 
 export const useBookActions = () => useBookStore((state) => state.actions);
+
 //-- --------------------------------------------
 //~ Filter Books
 //-- --------------------------------------------
-export const getFilteredBooks = () => {
-  const filters = useFilterStore.getState().applied;
-  const compareTypes = useFilterStore.getState().filterCompareTypes;
-  const books = useBookStore.getState().books;
-
-  let bookKeep: Book[] = [];
-
-  for (const book of books) {
-    if (bookKeep.length > 5000) {
-      break;
-    }
-    bookKeep.push(book);
-    for (const [filterFieldName, filterValue] of Object.entries(filters)) {
-      const bookValue = book[filterFieldName];
-      const compareType = compareTypes[filterFieldName];
-      // returns bool based on if match
-      const filterMatch = checkFilter(filterValue, bookValue, compareType);
-      // If one of the filters for the books fails, the remove the book
-      // from the array and continue with next book
-      if (!filterMatch) {
-        bookKeep.pop();
-        break;
-      }
-    }
-  }
-  // return { books: bookKeep, bookStats: getBooksStats(bookKeep) };
-  return { books: bookKeep, bookStats: {} };
-};
-//!!!!!!!!!!!!!
 export const useFilteredBooks = () => {
   const filters = useAppliedFilters();
+  const sort = useAppliedSort();
   const compareTypes = usefilterCompareTypes();
   const books = useBookStore((state) => state.books);
   const [isLoading, setIsLoading] = useState(true);
@@ -232,10 +266,27 @@ export const useFilteredBooks = () => {
 
     filterTimeout();
   }, [filters, books]);
+  //~ Prepare sort criteria
+  type SortDir = { fields: string[]; directions: ("asc" | "desc")[] };
+  const sortObject = sort
+    .filter((el) => el.active)
+    .reduce<SortDir>(
+      (final, el) => ({
+        fields: [...final.fields, el.sortField],
+        directions: [...final.directions, el.sortDirection],
+      }),
+      { fields: [], directions: [] }
+    );
+  //~ Sort books with lodash's orderBy
+  const sortedBooks = orderBy(
+    booksFiltered,
+    sortObject.fields,
+    sortObject.directions
+  );
 
   return {
     isLoading,
-    books: booksFiltered,
+    books: sortedBooks,
     // bookStats: getBooksStats(booksFiltered || [r]),
   };
 };

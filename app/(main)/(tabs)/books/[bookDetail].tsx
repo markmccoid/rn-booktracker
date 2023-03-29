@@ -6,15 +6,14 @@ import {
   useBookStore,
   logUserOut,
 } from "../../../../data/store";
-
+import BookImage from "../../../../components/books/BookImage";
+import DetailContainer from "../../../../components/books/bookDetail/DetailContainer";
 const BookDetail = () => {
   const { getBookDetail, updateUserBookData } = useBookActions();
   const searchParams = useSearchParams();
-  const bookData = useBookStore((state) => state.currentBook);
+  const bookData = getBookDetail(searchParams.bookDetail);
+  console.log("getting book detail");
 
-  useEffect(() => {
-    getBookDetail(searchParams.bookDetail);
-  }, [searchParams]);
   const onSetFavorite = async () => {
     // Need to merge data if already saved
     // This is where we need a separate function into async
@@ -36,10 +35,7 @@ const BookDetail = () => {
           },
         }}
       />
-      <Text>{bookData?.title}</Text>
-      <Text>{bookData?.author}</Text>
-      <Switch onValueChange={onSetFavorite} value={bookData?.favorite} />
-      <Button onPress={() => logUserOut()} title="Sign Out" />
+      <DetailContainer bookId={searchParams.bookDetail} />
     </View>
   );
 };

@@ -13,7 +13,6 @@ const BooksList = () => {
   const { books } = useFilteredBooks();
   return (
     <View style={{ flex: 1, flexGrow: 1 }}>
-      <Text>BooksList</Text>
       <FlatList
         data={books}
         keyExtractor={(item) => item._id}
