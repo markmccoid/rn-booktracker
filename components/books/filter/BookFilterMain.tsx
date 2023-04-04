@@ -14,6 +14,7 @@ import { FlatList } from "react-native-gesture-handler";
 import SortMain from "../sort/SortMain";
 import SourceFilter from "./SourceFilter";
 import McTextInput from "../../inputs/McTextInput/Index";
+import SourceFilterBlocks from "./SourceFilterBlocks";
 
 const BookFilterMain = () => {
   const { books: filteredBooks, isLoading } = useFilteredBooks(); // useBookStore((state) => state.filteredBooks);
@@ -41,7 +42,8 @@ const BookFilterMain = () => {
 
       <View className="flex flex-row border border-red-900">
         <View className="flex flex-col">
-          <SourceFilter />
+          {/* <SourceFilter /> */}
+          <SourceFilterBlocks />
         </View>
         <SortMain />
       </View>

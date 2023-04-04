@@ -15,6 +15,12 @@ export default function SettingsScreen() {
       >
         Link To Settings Detail
       </Link>
+      <Link
+        href="./settings/dropboxaccess"
+        style={{ borderWidth: 1, padding: 2 }}
+      >
+        Link To Dropbox Access
+      </Link>
       <View
         style={styles.separator}
         lightColor="#eee"

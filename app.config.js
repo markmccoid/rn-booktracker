@@ -4,6 +4,7 @@ import "dotenv/config";
 // should be populated whether building
 // for DEV or Prod
 const mongoKey = process.env.MONGO_APIKEY;
+const dropboxSecret = process.env.DROPBOX_SECRET;
 export default {
   name: "Book Tracker",
   slug: "book-tracker",
@@ -23,6 +24,10 @@ export default {
   },
   assetBundlePatterns: ["**/*"],
   ios: {
+    // Apple App Store Connect prompts you to select the type of encryption algorithm your app implements.
+    // This is known as Export Compliance Information. It is asked when publishing the app or submitting for TestFlight.
+    // The first setting takes care of this prompt
+    usesNonExemptEncryption: false,
     supportsTablet: false,
     bundleIdentifier: "com.mccoidco.booktracker",
     buildNumber: "0.1",
@@ -34,6 +39,7 @@ export default {
   // uses the expo contstancs package
   extra: {
     mongoAPIKey: mongoKey,
+    dropboxSecret: dropboxSecret,
     eas: {
       projectId: "bdea7e54-3c01-4787-91a8-c3b3adf709cd",
     },

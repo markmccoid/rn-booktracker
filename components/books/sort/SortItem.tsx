@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Feather, AntDesign } from "@expo/vector-icons";
+import { MotiView } from "moti";
 
 //ADD Delete icon and delete function from Store so Deletoing of item can be tested.
 //Update Items array to be generic items (maybe grocery list)
@@ -67,26 +68,35 @@ const SortItem = ({
       >{`(id-${id})`}</Text> */}
       <View className="flex flex-row justify-end  flex-grow">
         <TouchableOpacity
-          onPress={() => setLocalDirection("asc")}
+          onPress={() =>
+            setLocalDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+          }
           disabled={!localActive}
         >
-          <AntDesign
-            name="caretup"
-            size={24}
-            color={localDirection === "asc" ? "green" : "black"}
-          />
+          <MotiView
+            from={{
+              scale: 0,
+              transform: [{ rotate: "0deg" }],
+            }}
+            animate={{
+              scale: 1,
+              transform: [
+                { rotate: `${localDirection === "asc" ? "0deg" : "180deg"}` },
+              ],
+            }}
+            transition={{
+              type: "timing",
+              duration: 500,
+            }}
+          >
+            <AntDesign
+              name="caretup"
+              size={24}
+              color={localDirection === "asc" ? "green" : "red"}
+            />
+          </MotiView>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={{ marginLeft: 10 }}
-          onPress={() => setLocalDirection("desc")}
-          disabled={!localActive}
-        >
-          <AntDesign
-            name="caretdown"
-            size={24}
-            color={localDirection === "desc" ? "green" : "black"}
-          />
-        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={handleToggle}
           // onPress={() => {

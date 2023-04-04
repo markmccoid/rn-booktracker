@@ -52,7 +52,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tags"
         options={{
-          tabBarLabel: "Tagsserv",
+          tabBarLabel: "Tags",
+          tabBarIcon: ({ color }) => <TagsTabIcon color={color} />,
+          headerShown: false,
+        }}
+      />
+
+      <Tabs.Screen
+        name="dropbox"
+        options={{
+          tabBarLabel: "Dropbox",
           tabBarIcon: ({ color }) => <TagsTabIcon color={color} />,
           headerShown: false,
         }}

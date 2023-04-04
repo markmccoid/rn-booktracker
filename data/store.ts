@@ -31,6 +31,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: undefined,
   isLoggedIn: false,
 }));
+
+export const useAuthUser = () => useAuthStore((state) => state.currentUser);
 //~~~~~~~~~~~~~~~~~~~
 //~ Log IN and Log OUT functions
 //~~~~~~~~~~~~~~~~~~~

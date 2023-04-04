@@ -15,18 +15,25 @@ import SortItem from "./SortItem";
 export type ItemType = {
   // id: number | string;
   sortField: string;
+  displayName: string;
   sortDirection: string;
   active: boolean;
   pos: number;
 };
 
+type SortKeys = keyof ItemType;
 const SortMain = () => {
   const { setSort } = useFilterActions();
   const appliedSort = useAppliedSort();
-  // console.log("newSort", appliedSort);
-  const handleToggleActive = (sortId: string, sortAttribute, newVal) => {
+  // Called when a sort item attribute is changed.
+  // Current attributes are active (true/false) and sortDirection (asc/desc)
+  const handleSortAttributeChange = (
+    sortId: string,
+    sortAttribute: "active" | "sortDirection",
+    newVal: string
+  ) => {
     const newSort = [...appliedSort];
-    newSort.forEach((el) => {
+    newSort.forEach((el: ItemType) => {
       if (el.sortField === sortId) el[sortAttribute] = newVal;
     });
     setSort(newSort);
@@ -34,7 +41,6 @@ const SortMain = () => {
 
   return (
     <View className="flex-1">
-      <Text>Sort</Text>
       <DragDropEntry
         scrollStyles={{
           // width: 300,
@@ -67,7 +73,7 @@ const SortMain = () => {
               active={item.active}
               sortDirection={item.sortDirection}
               onUpdateSortDets={(sortAttribute, newVal) =>
-                handleToggleActive(item.sortField, sortAttribute, newVal)
+                handleSortAttributeChange(item.sortField, sortAttribute, newVal)
               }
             />
           );

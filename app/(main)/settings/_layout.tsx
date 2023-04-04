@@ -26,6 +26,14 @@ const SettingsScreenLayout = () => {
           },
         }}
       />
+      <Stack.Screen
+        name="dropboxaccess"
+        options={{
+          headerLeft: () => {
+            return null;
+          },
+        }}
+      />
     </Stack>
   );
 };
