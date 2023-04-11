@@ -1,23 +1,9 @@
-import { View, Text } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import React from "react";
-import { listDropboxFiles, ListOfFiles } from "../../../../data/dropboxUtils";
+import BrowserContainer from "../../../../components/dropbox/filebrowser/BrowserContainer";
 
 const DropboxFiles = () => {
-  const [files, setFiles] = React.useState<ListOfFiles>();
-  React.useEffect(() => {
-    const getFiles = async () => {
-      const files = await listDropboxFiles();
-      setFiles(files);
-    };
-    getFiles();
-  }, []);
-
-  console.log("files", files.entries);
-  return (
-    <View>
-      <Text>DropboxFiles</Text>
-    </View>
-  );
+  return <BrowserContainer />;
 };
 
 export default DropboxFiles;

@@ -26,7 +26,6 @@ const Categories = () => {
   const [localPrimary, setLocalPrimary] = useState(primaryCategory);
   const [localSecondary, setLocalSecondary] = useState(secondaryCategory);
   const filterActions = useFilterActions();
-
   const ddPrimaryCategories = useMemo(
     () => buildDropdown(primaryCategories),
     []

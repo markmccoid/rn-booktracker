@@ -1,6 +1,6 @@
 import { filter } from "lodash";
 import { useCallback, useState, useMemo, useEffect } from "react";
-import { View, Text, Pressable, TextInput } from "react-native";
+import { View, Text, Pressable, TextInput, Switch } from "react-native";
 import { MotiView } from "moti";
 
 import Categories from "./Categories";
@@ -15,6 +15,7 @@ import SortMain from "../sort/SortMain";
 import SourceFilter from "./SourceFilter";
 import McTextInput from "../../inputs/McTextInput/Index";
 import SourceFilterBlocks from "./SourceFilterBlocks";
+import ThreeWayFilter from "./ThreeWayFilter";
 
 const BookFilterMain = () => {
   const { books: filteredBooks, isLoading } = useFilteredBooks(); // useBookStore((state) => state.filteredBooks);
@@ -47,7 +48,14 @@ const BookFilterMain = () => {
         </View>
         <SortMain />
       </View>
-      {/* <Text>FILTERS: {JSON.stringify(filters)}</Text> */}
+
+      <View>
+        <ThreeWayFilter
+          stateFunction={(state) =>
+            filterActions.addFilter({ favorite: state })
+          }
+        />
+      </View>
       <View className="p-2 border-b border-b-orange-700 mb-2">
         <Text>{`Books Found -> ${filteredBooks?.length || "None"}`}</Text>
       </View>

@@ -34,6 +34,14 @@ const SettingsScreenLayout = () => {
           },
         }}
       />
+      <Stack.Screen
+        name="dropboxSetup"
+        options={{
+          headerLeft: () => {
+            return null;
+          },
+        }}
+      />
     </Stack>
   );
 };

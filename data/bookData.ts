@@ -60,11 +60,12 @@ const getAllBooks = async (): Promise<Book[]> => {
 //-- Load BOOK DATA
 //---------------------------------------------
 export const loadBookDataFromStorage = async () => {
-  let books = await loadFromAsyncStorage("books");
-  if (!books) {
-    books = await getAndStoreBooksToStorage();
+  let keyedBooks = await loadFromAsyncStorage("books");
+  if (!keyedBooks) {
+    const { keyedBooks, bookMetadata } = await getAndStoreBooksToStorage();
+    return keyedBooks;
   }
-  return books as Record<string, DBBook>;
+  return keyedBooks as Record<string, DBBook>;
 };
 
 //---------------------------------------------
@@ -74,21 +75,27 @@ export const getAndStoreBooksToStorage = async () => {
   const books = await getAllBooks();
   const keyedBooks = keyBy(books, "_id");
   await saveToAsyncStorage("books", keyedBooks);
-  return books;
+  // Extract Metadata from loaded books
+  // We do this everytime we pull from database
+  const bookMetadata = analyzeBooks(books);
+  await removeFromAsyncStorage("bookMetadata");
+  await saveToAsyncStorage("bookMetadata", bookMetadata);
+
+  return { keyedBooks, bookMetadata };
 };
 
 //---------------------------------------------
 //-- REFRESH Books from DB
 //---------------------------------------------
 export const onRefreshBooksFromDB = async () => {
-  const books = await getAndStoreBooksToStorage();
-  const keyedBooks = keyBy(books, "_id"); //
+  const { keyedBooks, bookMetadata } = await getAndStoreBooksToStorage();
+  // const keyedBooks = keyBy(books, "_id"); //
   // const books = await getAllBooks(); //
   // await saveToAsyncStorage("books", keyedBooks); //
 
-  const bookMetadata = analyzeBooks(books);
-  await removeFromAsyncStorage("bookMetadata");
-  await saveToAsyncStorage("bookMetadata", bookMetadata);
+  // const bookMetadata = analyzeBooks(books);
+  // await removeFromAsyncStorage("bookMetadata");
+  // await saveToAsyncStorage("bookMetadata", bookMetadata);
   const mergedBooks = await initalizeBookData(keyedBooks);
   // useBookStore.setState({ books: mergedBooks, bookMetadata });
   return { books: mergedBooks, bookMetadata };

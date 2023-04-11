@@ -15,7 +15,8 @@ import {
 import { loadBookDataFromStorage, onRefreshBooksFromDB } from "./bookData";
 import { Book, BookUserData, User } from "./types";
 import { useEffect, useState } from "react";
-
+import * as Crypto from "expo-crypto";
+import base64 from "react-native-base64";
 import orderBy from "lodash/orderBy";
 // import { useFilteredBooks } from "./useFilteredBooks";
 
@@ -25,14 +26,23 @@ import orderBy from "lodash/orderBy";
 interface AuthState {
   currentUser: User | undefined;
   isLoggedIn: boolean;
+  PCKEChallenge: string | undefined;
+  PCKEVerifier: string | undefined;
 }
 
 const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: undefined,
   isLoggedIn: false,
+  PCKEChallenge: undefined,
+  PCKEVerifier: undefined,
 }));
 
 export const useAuthUser = () => useAuthStore((state) => state.currentUser);
+export const useAuthPCKE = () =>
+  useAuthStore((state) => ({
+    challenge: state.PCKEChallenge,
+    verifier: state.PCKEVerifier,
+  }));
 //~~~~~~~~~~~~~~~~~~~
 //~ Log IN and Log OUT functions
 //~~~~~~~~~~~~~~~~~~~
@@ -71,8 +81,9 @@ export type Filters = {
   author?: string;
   title?: string;
   source?: "dropbox" | "audible";
+  favorite?: "include" | "exclude" | "off";
 };
-type CompareType = "equals" | "contains" | "bool";
+type CompareType = "equals" | "contains" | "bool" | "threeway";
 type FiltersCompareTypes = {
   primaryCategory: CompareType;
   secondaryCategory: CompareType;
@@ -110,6 +121,7 @@ const defaultFilterCompareTypes: FiltersCompareTypes = {
   author: "contains",
   title: "contains",
   source: "equals",
+  favorite: "threeway",
 };
 
 const defaultSort: AppliedSort = [
@@ -317,6 +329,17 @@ function checkFilter(
     if (compareType === "bool") {
       return filterValue === !!bookValue;
     }
+    if (compareType === "threeway") {
+      // if includes then return only "true" favorites
+      // if excludes then IF "true", do NOT return
+      // if off, ignore, so return true
+      if (filterValue === "off") return true;
+      if (bookValue) {
+        console.log("IN Filter", filterValue, bookValue);
+        return filterValue === "include" ? true : false;
+      }
+      return filterValue === "include" ? false : true;
+    }
   }
   return true;
 }
@@ -354,9 +377,31 @@ export function getBooksStats(books: Book[]) {
  */
 export const onInitialize = async () => {
   const currentUser = await loadFromAsyncStorage("currentUser");
+  //calculate PCKE Challenge
+  // Generate a random string of 64 characters (43-128 recommended by OAuth2 spec)
+  console.log("codeverifier");
+  const codeVerifierInit = base64.encode(
+    Array.from({ length: 64 }, () => Math.random().toString(36)[2])
+      .join("")
+      .substring(0, 128)
+  );
+  const codeVerifier = codeVerifierInit.replace(/=/g, "");
+  console.log("codeverifier DONE", codeVerifier);
+  const sha = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    codeVerifier
+  );
+  const codeChallengeInit = base64.encode(sha);
+  const codeChallenge = codeChallengeInit.replace(/=/g, "");
+  useAuthStore.setState({
+    PCKEChallenge: codeChallenge,
+    PCKEVerifier: codeVerifier,
+  });
+
   // Log user in if exists
   if (currentUser) {
     await logUserIn(currentUser);
   }
+
   return currentUser;
 };

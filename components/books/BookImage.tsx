@@ -1,5 +1,6 @@
 import { View, Image, StyleSheet } from "react-native";
 import React from "react";
+import FastImage from "react-native-fast-image";
 
 const RATIO = 128 / 193;
 type Props = {
@@ -20,9 +21,9 @@ const BookImage = ({ imageURL, width = 135, ratio = RATIO }: Props) => {
   }
   return (
     <View style={styles.shadow} className="rounded-lg">
-      <Image
-        resizeMode="stretch"
-        source={{ uri: imageURL }}
+      <FastImage
+        resizeMode={FastImage.resizeMode.stretch}
+        source={{ uri: imageURL, priority: FastImage.priority.normal }}
         style={{ width: DB_WIDTH, height: DB_HEIGHT }}
         className="rounded-lg"
       />

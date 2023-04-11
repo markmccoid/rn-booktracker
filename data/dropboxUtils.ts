@@ -22,18 +22,20 @@ export const getAuthToken = async (authKey: string): Promise<AuthToken> => {
   // ListenToMyBooks dropbox app
   const username = "l0rzqa2ib2p9dyp"; // dropbox app key
   const password = "d4l48gno8wln2d9"; // dropbox app secret
-
+  console.log("AUTHKEY", authKey);
   const authHeader = "Basic " + base64.encode(`${username}:${password}`);
   const data = new URLSearchParams();
   data.append("code", authKey);
   data.append("grant_type", "authorization_code");
-
+  console.log("DATA", data);
+  console.log("UP", authHeader);
   try {
     const response = await axios.post(
-      `https://api.dropbox.com/oauth2/token`,
-      data,
+      "https://api.dropboxapi.com/oauth2/token",
+      { code: authKey, grant_type: "authorization_code" },
       {
         headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
           Authorization: authHeader,
         },
       }
@@ -50,7 +52,7 @@ export const getAuthToken = async (authKey: string): Promise<AuthToken> => {
     */
   } catch (e) {
     const err = e as AxiosError;
-    // console.log("error =", typeof err, err);
+    console.log("error =", typeof err, err.code, err.config, err.request);
     return {
       token: "",
       error: err.message,
@@ -146,7 +148,7 @@ export const listDropboxFiles = async (
   path: string = ""
 ): Promise<ListOfFiles> => {
   const token = await getDropboxToken();
-  console.log("TOKEN", token);
+  // console.log("TOKEN", token);
   const data = { path: path };
   let resp;
   try {
@@ -161,7 +163,17 @@ export const listDropboxFiles = async (
       }
     );
   } catch (err) {
-    throw new Error(`Dropbox List Files Error - ${err}`);
+    console.log("Throw ERRPR", err.response.status, err.message);
+    // Rethrow error to get picked up in code.
+    // Did this because was thinking of create a custom error
+    // class for my app error so
+    if (err.response.status === 401) {
+      throw new Error("Problem with Dropbox Authorization", {
+        cause: "Dropbox",
+      });
+    } else {
+      throw new Error(err);
+    }
   }
   return resp?.data;
   // .then((resp) => ({

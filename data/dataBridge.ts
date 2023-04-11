@@ -22,7 +22,7 @@ export const saveUserBookData = async (
 //---------------------------------------------
 export const loadUserBookData = async () => {
   const currentUser = await getCurrentUser();
-  console.log("current user", currentUser);
+
   if (currentUser?.uid) {
     // @ts-ignore
     const userBookData = await loadFromAsyncStorage(

@@ -5,6 +5,7 @@ import {
   TextInput,
   StyleSheet,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState } from "react";
 import { useAuth } from "../../auth/provider";
@@ -32,7 +33,8 @@ const generateUserObject = (username: string): User => {
 
 const SignIn = () => {
   const [newUser, setNewUser] = useState("");
-  const [allUsers, setAllUsers] = React.useState<User[] | []>([]);
+  const [allUsers, setAllUsers] = useState<User[] | []>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   //~~ User Add/delete functions
   const addNewUser = async () => {
@@ -48,6 +50,11 @@ const SignIn = () => {
     await saveToAsyncStorage("users", newAllUsers);
   };
 
+  const onUserLogIn = async (user: User) => {
+    setIsLoading(true);
+    await logUserIn(user);
+    setIsLoading(false);
+  };
   React.useEffect(() => {
     // Need the isMounted to handle "cancellation" of async
     // if onInitialize finds a "currentUser" and runs the login function
@@ -88,36 +95,52 @@ const SignIn = () => {
           </View>
         </Pressable>
       </View>
-      <Text>Users</Text>
-      <View>
-        {allUsers.map((user) => (
-          <View
-            key={user.uid}
-            style={{
-              flexDirection: "row",
-              borderWidth: 1,
-              justifyContent: "space-between",
-              marginBottom: 4,
-            }}
-          >
-            <Pressable onPress={() => logUserIn(user)}>
-              <Text style={{ padding: 8 }}>{user.username}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => deleteUser(user.uid)}
-              style={{ backgroundColor: "blue", padding: 8 }}
-            >
-              <Text style={{ color: "white" }}>Delete</Text>
-            </Pressable>
+
+      {/* Existing Users - Choosing will load DB */}
+      {isLoading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" />
+        </View>
+      ) : (
+        <>
+          <Text>Users</Text>
+          <View>
+            {allUsers.map((user) => (
+              <View
+                key={user.uid}
+                style={{
+                  flexDirection: "row",
+                  borderWidth: 1,
+                  justifyContent: "space-between",
+                  marginBottom: 4,
+                }}
+              >
+                <Pressable onPress={() => onUserLogIn(user)}>
+                  <Text style={{ padding: 8 }}>{user.username}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => deleteUser(user.uid)}
+                  style={{ backgroundColor: "blue", padding: 8 }}
+                >
+                  <Text style={{ color: "white" }}>Delete</Text>
+                </Pressable>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
       {/* <Button onPress={() => auth.signIn()} title="SIGN IN" /> */}
-      <Link href="/books">Go To protected Route</Link>
-      <Button
-        onPress={() => removeFromAsyncStorage("Users")}
-        title="CLear ALL Users"
-      />
+      {!isLoading && (
+        <>
+          <Link href="/books">Go To protected Route</Link>
+          <Button
+            onPress={() => removeFromAsyncStorage("Users")}
+            title="CLear ALL Users"
+          />
+        </>
+      )}
     </View>
   );
 };
