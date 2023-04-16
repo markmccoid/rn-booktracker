@@ -4,7 +4,6 @@ import { View, Text, Pressable, TextInput, Switch } from "react-native";
 import { MotiView } from "moti";
 
 import Categories from "./Categories";
-import TextFilter from "./TextFilter";
 import {
   useAppliedFilters,
   useFilterActions,
@@ -12,10 +11,10 @@ import {
 } from "../../../data/store";
 import { FlatList } from "react-native-gesture-handler";
 import SortMain from "../sort/SortMain";
-import SourceFilter from "./SourceFilter";
 import McTextInput from "../../inputs/McTextInput/Index";
 import SourceFilterBlocks from "./SourceFilterBlocks";
 import ThreeWayFilter from "./ThreeWayFilter";
+import { favoriteSwitchInfo, listenedToSwitchInfo } from "./filterIcons";
 
 const BookFilterMain = () => {
   const { books: filteredBooks, isLoading } = useFilteredBooks(); // useBookStore((state) => state.filteredBooks);
@@ -51,9 +50,16 @@ const BookFilterMain = () => {
 
       <View>
         <ThreeWayFilter
-          stateFunction={(state) =>
-            filterActions.addFilter({ favorite: state })
+          currentState={filters.favorite}
+          updateState={(state) => filterActions.addFilter({ favorite: state })}
+          displayInfo={favoriteSwitchInfo}
+        />
+        <ThreeWayFilter
+          currentState={filters.listenedTo}
+          updateState={(state) =>
+            filterActions.addFilter({ listenedTo: state })
           }
+          displayInfo={listenedToSwitchInfo}
         />
       </View>
       <View className="p-2 border-b border-b-orange-700 mb-2">

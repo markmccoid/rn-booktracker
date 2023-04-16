@@ -18,31 +18,76 @@ import { useEffect, useState } from "react";
 import * as Crypto from "expo-crypto";
 import base64 from "react-native-base64";
 import orderBy from "lodash/orderBy";
+import { authRoute } from "../utils/routeConsts";
+import {
+  getDropboxRefreshToken,
+  getDropboxToken,
+  storeDropboxRefreshToken,
+  storeDropboxToken,
+} from "./secureStorage";
 // import { useFilteredBooks } from "./useFilteredBooks";
 
 //------------------------------------------------------------
 //-- AUTH STORE
 //------------------------------------------------------------
+export type DropboxAuthObj = {
+  dropboxToken: string;
+  dropboxExpireDate: number;
+  dropboxRefreshToken: string;
+  dropboxAccountId: string;
+  dropboxUID: string;
+};
 interface AuthState {
   currentUser: User | undefined;
   isLoggedIn: boolean;
-  PCKEChallenge: string | undefined;
-  PCKEVerifier: string | undefined;
+  // dropboxToken: string | undefined;
+  dropboxExpireDate: number;
+  // dropboxRefreshToken: string | undefined;
+  dropboxAccountId: string | undefined;
+  dropboxUID: string | undefined;
+  dropboxActions: {
+    updateToken: (newToken: string, newExpireDate: number) => void;
+    updateDropboxAuth: (dropboxAuthObj: Partial<DropboxAuthObj>) => void;
+  };
 }
 
 const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: undefined,
   isLoggedIn: false,
-  PCKEChallenge: undefined,
-  PCKEVerifier: undefined,
+  // dropboxToken: undefined,
+  dropboxExpireDate: 0,
+  // dropboxRefreshToken: undefined,
+  dropboxAccountId: undefined,
+  dropboxUID: undefined,
+  dropboxActions: {
+    async updateToken(newToken, newExpireDate) {
+      useAuthStore.setState({ dropboxExpireDate: newExpireDate });
+      if (newToken) await storeDropboxToken(newToken);
+    },
+    async updateDropboxAuth(dropboxAuthObj: Partial<DropboxAuthObj>) {
+      useAuthStore.setState({ ...dropboxAuthObj });
+      const state = useAuthStore.getState();
+      const currDropBox = {
+        // dropboxToken: state.dropboxToken,
+        dropboxExpireDate: state.dropboxExpireDate,
+        // dropboxRefreshToken: state.dropboxRefreshToken,
+        dropboxAccountId: state.dropboxAccountId,
+        dropboxUID: state.dropboxUID,
+      };
+      const resp = await saveToAsyncStorage("dropbox", currDropBox);
+      if (dropboxAuthObj.dropboxRefreshToken)
+        await storeDropboxRefreshToken(dropboxAuthObj.dropboxRefreshToken);
+      if (dropboxAuthObj.dropboxToken)
+        await storeDropboxToken(dropboxAuthObj.dropboxToken);
+    },
+  },
 }));
 
 export const useAuthUser = () => useAuthStore((state) => state.currentUser);
-export const useAuthPCKE = () =>
-  useAuthStore((state) => ({
-    challenge: state.PCKEChallenge,
-    verifier: state.PCKEVerifier,
-  }));
+export const useDropboxExpireDate = () =>
+  useAuthStore((state) => state.dropboxExpireDate);
+export const useDropboxActions = () =>
+  useAuthStore((state) => state.dropboxActions);
 //~~~~~~~~~~~~~~~~~~~
 //~ Log IN and Log OUT functions
 //~~~~~~~~~~~~~~~~~~~
@@ -59,6 +104,9 @@ export const logUserIn = async (user: User) => {
   const books = await initalizeBookData(booksKeyed);
   useAuthStore.setState({ currentUser: user, isLoggedIn: true });
   useBookStore.setState({ books, bookMetadata });
+  // Get Dropbox Info
+  const dropboxObj = await loadFromAsyncStorage("dropbox");
+  useAuthStore.setState({ ...dropboxObj });
 };
 
 export const logUserOut = async () => {
@@ -81,7 +129,8 @@ export type Filters = {
   author?: string;
   title?: string;
   source?: "dropbox" | "audible";
-  favorite?: "include" | "exclude" | "off";
+  favorite?: "include" | "exclude" | "inactive";
+  listenedTo?: "include" | "exclude" | "inactive";
 };
 type CompareType = "equals" | "contains" | "bool" | "threeway";
 type FiltersCompareTypes = {
@@ -90,6 +139,8 @@ type FiltersCompareTypes = {
   author: CompareType;
   title: CompareType;
   source: CompareType;
+  favorite: CompareType;
+  listenedTo: CompareType;
 };
 type Sort =
   | "publishedYear"
@@ -122,6 +173,7 @@ const defaultFilterCompareTypes: FiltersCompareTypes = {
   title: "contains",
   source: "equals",
   favorite: "threeway",
+  listenedTo: "threeway",
 };
 
 const defaultSort: AppliedSort = [
@@ -333,9 +385,9 @@ function checkFilter(
       // if includes then return only "true" favorites
       // if excludes then IF "true", do NOT return
       // if off, ignore, so return true
-      if (filterValue === "off") return true;
+      if (filterValue === "inactive") return true;
+      // if bookvalue = true
       if (bookValue) {
-        console.log("IN Filter", filterValue, bookValue);
         return filterValue === "include" ? true : false;
       }
       return filterValue === "include" ? false : true;
@@ -377,26 +429,6 @@ export function getBooksStats(books: Book[]) {
  */
 export const onInitialize = async () => {
   const currentUser = await loadFromAsyncStorage("currentUser");
-  //calculate PCKE Challenge
-  // Generate a random string of 64 characters (43-128 recommended by OAuth2 spec)
-  console.log("codeverifier");
-  const codeVerifierInit = base64.encode(
-    Array.from({ length: 64 }, () => Math.random().toString(36)[2])
-      .join("")
-      .substring(0, 128)
-  );
-  const codeVerifier = codeVerifierInit.replace(/=/g, "");
-  console.log("codeverifier DONE", codeVerifier);
-  const sha = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    codeVerifier
-  );
-  const codeChallengeInit = base64.encode(sha);
-  const codeChallenge = codeChallengeInit.replace(/=/g, "");
-  useAuthStore.setState({
-    PCKEChallenge: codeChallenge,
-    PCKEVerifier: codeVerifier,
-  });
 
   // Log user in if exists
   if (currentUser) {

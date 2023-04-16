@@ -1,12 +1,122 @@
-import { getDropboxToken } from "./secureStorage";
+import { useEffect, useState } from "react";
+import {
+  getDropboxRefreshToken,
+  getDropboxToken,
+  storeDropboxToken,
+} from "./secureStorage";
 import axios, { AxiosError } from "axios";
 import base64 from "react-native-base64";
+import Constants from "expo-constants";
 
 type AuthToken = {
   token: string;
   error?: string;
 };
 
+const APP_KEY = "l0rzqa2ib2p9dyp";
+const APP_SECRECT = Constants?.manifest?.extra?.dropboxSecret;
+//* refreshToken ----------------------
+/**
+ *
+ * @param refreshToken
+ * @returns token
+ */
+export const refreshToken = async (refreshToken: string) => {
+  const username = APP_KEY; // dropbox app key
+  const password = APP_SECRECT; // dropbox app secret
+  const authHeader = "Basic " + base64.encode(`${username}:${password}`);
+  try {
+    const response = await axios.post(
+      "https://api.dropboxapi.com/oauth2/token",
+      { refresh_token: refreshToken, grant_type: "refresh_token" },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: authHeader,
+        },
+      }
+    );
+    // Only returning the access token
+    return {
+      token: response.data.access_token as string,
+      expiresIn: response.data.expires_in as number,
+    };
+    /* data: {
+        access_token: string;
+        token_type: string; //"bearer"
+        expires_in: number // millisecons usually 14400
+    }
+    */
+  } catch (e) {
+    const err = e as AxiosError;
+    console.log("error =", typeof err, err.code, err.config, err.request);
+    return {
+      token: "",
+      expiresIn: 0,
+      error: err.message,
+    };
+  }
+};
+//* checkDropboxToken -----------------
+/**
+ * Checks for the validity of the existing token.
+ * If token is "good"
+ *  - return { token, tokenExpireDate }
+ * If token is "bad", it checks to see if refresh tokens exists
+ * If refresh token exists
+ *  - Get new token
+ *  - save to secure storage
+ *  - return { token, tokenExpireDate }
+ * if no refresh token exists
+ *  - return { token: undefined }
+ * @returns Object = { token: string | undefined, tokenExpireDate?: number }
+ */
+
+export const checkDropboxToken = async () => {
+  const token = await getDropboxToken();
+  console.log("checkDropboxToken - Token from Storage", token);
+  if (token) {
+    // token exists, so check to see if still valid
+    const { valid } = await isDropboxTokenValid(token);
+    if (valid) {
+      //~~ RETURN VALID Token pulled from Storage
+      return { token };
+    }
+  }
+  console.log("TOKEN IS NOT VALID");
+
+  const dbRefreshToken = await getDropboxRefreshToken();
+  console.log("checkDropboxToken - REFRESH", dbRefreshToken);
+  if (dbRefreshToken) {
+    const { token: dropboxToken, expiresIn } = await refreshToken(
+      dbRefreshToken
+    );
+    console.log("checkDropboxToken - dropbox token new", dropboxToken);
+    // This is storing to secureStore on device
+    // dropboxActions.updateToken(dropboxToken, Date.now() + expiresIn);
+    await storeDropboxToken(dropboxToken);
+    //~~ RETURN VALID Token REFRESHED
+    return { token: dropboxToken, tokenExpireDate: Date.now() + expiresIn };
+  }
+  //~~ RETURN Either New unauthed or some other error
+  return { token: undefined };
+};
+
+//-- Refresh HOOK
+export const useDropboxToken = () => {
+  const [token, setToken] = useState<string>();
+  const [tokenExpireDate, setTokenExpireDate] = useState(0);
+  useEffect(() => {
+    const getToken = async () => {
+      const checkReturn = await checkDropboxToken();
+      const token = checkReturn.token;
+      const expiresIn = Date.now() + (checkReturn?.tokenExpireDate || 0);
+      setToken(token);
+    };
+    getToken();
+  }, []);
+  return { token, tokenExpireDate };
+};
 //* getAuthToken ----------------------
 /**
  * This function needs an authKey from the users dropbox account
@@ -20,7 +130,7 @@ export const getAuthToken = async (authKey: string): Promise<AuthToken> => {
   // These are my dropbox apps id and secret phrase used as username/password
   // Dropbox App Console https://www.dropbox.com/developers/apps?_tk=pilot_lp&_ad=topbar4&_camp=myapps
   // ListenToMyBooks dropbox app
-  const username = "l0rzqa2ib2p9dyp"; // dropbox app key
+  const username = APP_KEY; // dropbox app key
   const password = "d4l48gno8wln2d9"; // dropbox app secret
   console.log("AUTHKEY", authKey);
   const authHeader = "Basic " + base64.encode(`${username}:${password}`);

@@ -1,12 +1,27 @@
-import { View, Text, Pressable } from "react-native";
-import React, { useReducer } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ViewProps,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import React, {
+  ReactComponentElement,
+  ReactNode,
+  useReducer,
+  useState,
+} from "react";
+import Button from "../../common/Button";
+import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
+import { colors } from "../../../constants/globalStyles";
 
-type State = "include" | "exclude" | "off";
+type State = "include" | "exclude" | "inactive";
 
 type Action = {
   type: "toggle" | State;
 };
-
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "toggle":
@@ -14,8 +29,8 @@ function reducer(state: State, action: Action): State {
         case "include":
           return "exclude";
         case "exclude":
-          return "off";
-        case "off":
+          return "inactive";
+        case "inactive":
           return "include";
         default:
           throw new Error(`Unhandled state: ${state}`);
@@ -24,29 +39,67 @@ function reducer(state: State, action: Action): State {
       return "include";
     case "exclude":
       return "exclude";
-    case "off":
-      return "off";
+    case "inactive":
+      return "inactive";
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
 
-type Props = {
-  stateFunction: (state: State) => void;
+export type ThreeWayDisplayInfo = {
+  displayState: State;
+  displayValue: string;
+  constianerStyle: ViewStyle;
+  textStyle: TextStyle;
+  icon: ReactNode;
 };
-const ThreeWayFilter = ({ stateFunction = () => {} }: Props) => {
-  const [state, dispatch] = useReducer(reducer, "off");
+
+type Props = {
+  currentState?: State;
+  updateState: (state: State) => void;
+  displayInfo: ThreeWayDisplayInfo[];
+};
+
+const ThreeWayFilter = ({
+  currentState = "inactive",
+  updateState = () => {},
+  displayInfo,
+}: Props) => {
+  const [state, dispatch] = useReducer(reducer, currentState);
+  const [currentDisplayInfo, setCurrentDisplayInfo] = useState(() =>
+    displayInfo.find((el) => el.displayState === currentState)
+  );
 
   React.useEffect(() => {
-    stateFunction(state);
+    // Whenever reducer state changes, run the passed in function
+    // In this case it will update the store's filter
+    updateState(state);
+    setCurrentDisplayInfo(displayInfo.find((el) => el.displayState === state));
   }, [state]);
 
   return (
-    <View>
-      <Text>{state}</Text>
-      <Pressable onPress={() => dispatch({ type: "toggle" })}>
-        <Text>Toggle State</Text>
-      </Pressable>
+    <View style={{ width: 120 }}>
+      <Button
+        style={{
+          borderRadius: 6,
+          borderWidth: StyleSheet.hairlineWidth,
+          padding: 5,
+          ...currentDisplayInfo?.constianerStyle,
+        }}
+        action={() => dispatch({ type: "toggle" })}
+      >
+        <View className="flex flex-row justify-center mr-1">
+          {currentDisplayInfo?.icon && (
+            <View className="flex-1 mr-1">{currentDisplayInfo.icon}</View>
+            // <View className="mr-1 self-start border border-black flex-1">
+            //   <MinusIcon />
+            // </View>
+          )}
+          <Text style={{ ...currentDisplayInfo?.textStyle }}>
+            {currentDisplayInfo?.displayValue}
+          </Text>
+        </View>
+      </Button>
     </View>
   );
 };

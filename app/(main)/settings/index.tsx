@@ -27,6 +27,12 @@ export default function SettingsScreen() {
       >
         Other Dropbox Access
       </Link>
+      <Link
+        href="./settings/dropboxAuth"
+        style={{ borderWidth: 1, padding: 2 }}
+      >
+        react-native-app-auth
+      </Link>
       <View
         style={styles.separator}
         lightColor="#eee"

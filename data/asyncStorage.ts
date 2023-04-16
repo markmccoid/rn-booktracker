@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Book, User } from "./types";
 import { Dictionary } from "lodash";
+import { DropboxAuthObj } from "./store";
 
 type StorageKeys =
   | "users"
@@ -11,7 +12,7 @@ type StorageKeys =
   | "tagData"
   | "settings"
   | "savedFilters"
-  | "dropboxToken";
+  | "dropbox";
 export type CategoryMap = Record<string, string[]>;
 export type BookMetadata = {
   categoryMap: CategoryMap;
@@ -19,7 +20,12 @@ export type BookMetadata = {
   secondaryCategories: string[];
   genres: string[];
 };
-type Data = User | Dictionary<Book> | Record<string, Book> | BookMetadata;
+type Data =
+  | User
+  | Dictionary<Book>
+  | Record<string, Book>
+  | BookMetadata
+  | DropboxAuthObj;
 // --------------------------------------------
 // -- LOAD passed key from Local Storage
 // --------------------------------------------
